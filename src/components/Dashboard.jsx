@@ -214,57 +214,49 @@ export default function Dashboard() {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static" color="primary" elevation={1}>
-  <Toolbar sx={{ minHeight: 64, display: 'flex' }}>
-    
-    {/* Left: Title */}
+  <Toolbar sx={{ gap: 1, minHeight: 64 }}>
     <Typography variant={isSm ? 'subtitle1' : 'h6'}>
       German Rental Analysis
     </Typography>
 
-    {/* Center: KPIs */}
-    <Box sx={{ 
-      flex: 1, 
+    {/* KPIs inline - show only on Dashboard tab */}
+    {tab === 0 && (
+      <Box sx={{ flex: 1, 
       display: 'flex', 
       justifyContent: 'center',   // centers horizontally
       gap: 1, 
-      flexWrap: 'wrap' 
-    }}>
-      <Card sx={{ bgcolor:'#14B8A6', color:'#fff', px:2, py:1, minWidth:130 }}>
-        <Typography sx={{ fontWeight:700, lineHeight:1 }}>
-          €{(+KPIs.avgRent).toLocaleString()}
-        </Typography>
-        <Typography sx={{ fontSize:11, opacity:.9 }}>
-          Avg. Total Rent
-        </Typography>
-      </Card>
-      <Card sx={{ bgcolor:'#EF4444', color:'#fff', px:2, py:1, minWidth:130 }}>
-        <Typography sx={{ fontWeight:700, lineHeight:1 }}>
-          €{KPIs.avgPpsm}
-        </Typography>
-        <Typography sx={{ fontSize:11, opacity:.9 }}>
-          Price per m²
-        </Typography>
-      </Card>
-      <Card sx={{ bgcolor:'#F59E0B', color:'#fff', px:2, py:1, minWidth:110 }}>
-        <Typography sx={{ fontWeight:700, lineHeight:1 }}>
-          {KPIs.avgSqm}m²
-        </Typography>
-        <Typography sx={{ fontSize:11, opacity:.9 }}>
-          Avg. Living Space
-        </Typography>
-      </Card>
-    </Box>
+      flexWrap: 'wrap' }}>
+        <Card sx={{ bgcolor:'#14B8A6', color:'#fff', px:2, py:1, minWidth:130 }}>
+          <Typography sx={{ fontWeight:700, lineHeight:1 }}>
+            €{(+KPIs.avgRent).toLocaleString()}
+          </Typography>
+          <Typography sx={{ fontSize:11, opacity:.9 }}>Avg. Total Rent</Typography>
+        </Card>
+        <Card sx={{ bgcolor:'#EF4444', color:'#fff', px:2, py:1, minWidth:130 }}>
+          <Typography sx={{ fontWeight:700, lineHeight:1 }}>
+            €{KPIs.avgPpsm}
+          </Typography>
+          <Typography sx={{ fontSize:11, opacity:.9 }}>Price per m²</Typography>
+        </Card>
+        <Card sx={{ bgcolor:'#F59E0B', color:'#fff', px:2, py:1, minWidth:110 }}>
+          <Typography sx={{ fontWeight:700, lineHeight:1 }}>
+            {KPIs.avgSqm}m²
+          </Typography>
+          <Typography sx={{ fontSize:11, opacity:.9 }}>Avg. Living Space</Typography>
+        </Card>
+      </Box>
+    )}
 
-    {/* Right: Tabs */}
-    <Box sx={{ display:'flex', gap:2, color:'#fff', fontWeight:600, cursor:'pointer' }}>
-      <Typography 
-        sx={{ textDecoration: tab===0?'underline':'none' }} 
+    {/* Navigation tabs */}
+    <Box sx={{ ml:'auto', display:'flex', gap:2, color:'#fff', fontWeight:600, cursor:'pointer' }}>
+      <Typography
+        sx={{ textDecoration: tab===0?'underline':'none' }}
         onClick={()=>setTab(0)}
       >
         DASHBOARD
       </Typography>
-      <Typography 
-        sx={{ textDecoration: tab===1?'underline':'none' }} 
+      <Typography
+        sx={{ textDecoration: tab===1?'underline':'none' }}
         onClick={()=>setTab(1)}
       >
         PREDICTION
@@ -272,6 +264,7 @@ export default function Dashboard() {
     </Box>
   </Toolbar>
 </AppBar>
+
 
 
       <Container maxWidth={false} disableGutters sx={{ px: 2, py: 2 }}>
