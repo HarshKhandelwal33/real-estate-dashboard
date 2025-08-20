@@ -17,9 +17,9 @@ class RentPredictor {
       base: 800,
       livingSpace: 8.2,
       rooms: 120,
-      balcony: 212,
+      balcony: 254,
       garden: 65,
-      lift: 332
+      lift: 402
     };
   }
 
