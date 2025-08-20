@@ -12,39 +12,50 @@ body {
   min-height: 100vh;
 }
 
+/* Subtle hover for potential SVG map (kept from previous project) */
 #germany-map path {
   transition: fill 0.2s ease-in-out;
 }
-
 #germany-map path:hover {
   fill: #F59E0B !important;
 }
 
-/* Ensure charts fill available space */
+/* ---- CHART + CARD SIZING FIXES ---- */
+
+/* Let Recharts fill its container (do NOT force auto height) */
 .recharts-wrapper {
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important;
+}
+
+/* Consistent min-height for chart cards so nothing is clipped */
+.chart-card {
+  min-height: 420px;
+}
+
+/* Compact padding on cards throughout for a tighter look */
+.MuiCardContent-root {
+  padding: 12px !important;
+}
+
+/* Compact AppBar padding */
+.MuiToolbar-root {
+  padding-left: 16px !important;
+  padding-right: 16px !important;
 }
 
 /* Responsive adjustments */
 @media (max-width: 1200px) {
-  /* Stack sidebar below charts on smaller screens */
-  .dashboard-layout {
-    flex-direction: column !important;
-  }
-  
-  .filter-sidebar {
-    width: 100% !important;
-    position: relative !important;
-    margin-top: 20px;
-  }
+  .chart-card { min-height: 380px; }
+}
+@media (max-width: 900px) {
+  .chart-card { min-height: 360px; }
 }
 
 /* Improve chart readability */
 .recharts-cartesian-axis-tick-value {
   font-size: 12px;
 }
-
 .recharts-legend-wrapper {
   padding-top: 10px;
 }
@@ -55,9 +66,25 @@ body {
   border-radius: 8px;
 }
 
-/* Filter card styling */
+/* Filter bar styling */
 .filter-card {
   background: white;
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+
+/* Make the app feel full-width while keeping a tiny page gutter */
+body { margin: 0; background: #f5f5f5; }
+#root { min-height: 100vh; }
+
+/* Recharts must fill their parent Box */
+.recharts-wrapper { width: 100% !important; height: 100% !important; }
+
+/* Card content a bit tighter so charts have more room */
+.MuiCardContent-root { padding: 10px !important; }
+
+/* Subtle shadows and rounded corners */
+.MuiCard-root { box-shadow: 0 2px 8px rgba(0,0,0,.1); border-radius: 8px; }
+
+/* Keep toolbars compact */
+.MuiToolbar-root { padding-left: 16px !important; padding-right: 16px !important; }

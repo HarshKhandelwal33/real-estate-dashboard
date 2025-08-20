@@ -1,27 +1,25 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   Box, Grid, Card, Typography, TextField, FormControl, InputLabel, Select, MenuItem, Divider,
 } from '@mui/material';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 // ---------------
-// Model logic (simulated; replace with your actual trained Random Forest logic)
+// Model logic (simulated; keep as-is)
 // ---------------
 class RentPredictor {
   constructor() {
-    // Simulate fit status and feature importance
     this.isTrained = false;
     this.data = [];
     this.featureImpacts = { balcony: 0, garden: 0, lift: 0 };
     this.regionMultipliers = {};
-    // For simulation, set basic coefficients
     this.coeffs = {
       base: 800,
       livingSpace: 8.2,
       rooms: 120,
-      balcony: 48,
+      balcony: 212,
       garden: 65,
-      lift: 32
+      lift: 332
     };
   }
 
@@ -39,11 +37,9 @@ class RentPredictor {
   }
 
   train(data) {
-    // Accepts train data array from parent
     if (!Array.isArray(data) || data.length === 0) return;
     this.data = data;
 
-    // Compute simple empirical region multipliers for demo
     const allRegions = data
       .map(row => this.cleanRegionName(row.regio1))
       .filter(Boolean);
@@ -56,14 +52,11 @@ class RentPredictor {
       this.regionMultipliers[region] = avg > 0 ? avg / 1200 : 1.0; // Just scale
     });
 
-    // Calculate average model-based impact for each feature
     this.featureImpacts = this.calculateModelFeatureImpacts();
     this.isTrained = true;
   }
 
-  // Main model prediction logic
   predict(row) {
-    // Replace with actual RF `.predict` if available
     let pred = this.coeffs.base +
       this.coeffs.livingSpace * (parseFloat(row.livingSpace) || 0) +
       this.coeffs.rooms * (parseFloat(row.rooms) || 0);
@@ -78,7 +71,6 @@ class RentPredictor {
     return Math.round(pred);
   }
 
-  // Per your requirement: empirical model-based impact - for fixed inputs, toggle each feature
   getSixPredictions(livingSpace, rooms, region) {
     const baseInputs = {
       livingSpace,
@@ -86,16 +78,16 @@ class RentPredictor {
       regio1: region
     };
     return [
-    {
+      {
         name: 'All true',
         rent: this.predict({ ...baseInputs, balcony: true, garden: true, lift: true }),
         hasFeature: true, featureType: 'allTrue'
-    },
-    {
+      },
+      {
         name: 'All false',
         rent: this.predict({ ...baseInputs, balcony: false, garden: false, lift: false }),
         hasFeature: true, featureType: 'allFalse'
-    },
+      },
       {
         name: 'Balcony',
         rent: this.predict({ ...baseInputs, balcony: true, garden: false, lift: false }),
@@ -129,7 +121,6 @@ class RentPredictor {
     ];
   }
 
-  // For property-level model-based feature effect: average delta for each feature (per your final suggestion)
   calculateModelFeatureImpacts() {
     const impacts = {};
     ['balcony', 'garden', 'lift'].forEach(feature => {
@@ -166,12 +157,10 @@ const PredictionTab = ({ data = [] }) => {
   const [predictions, setPredictions] = useState([]);
   const [featureImpacts, setFeatureImpacts] = useState({ balcony: 0, garden: 0, lift: 0 });
 
-  // Use singleton - or else everything retrains on state change.
   const [predictor] = useState(() => new RentPredictor());
 
-  // Region utilities
   const cleanRegionName = (name) => predictor.cleanRegionName(name);
-  const availableRegions = React.useMemo(() => (
+  const availableRegions = useMemo(() => (
     Array.isArray(data) ? (
       [...new Set(data
         .map(row => cleanRegionName(row.regio1))
@@ -179,7 +168,7 @@ const PredictionTab = ({ data = [] }) => {
     ) : []
   ), [data]);
 
-  // Training effect
+  // Train once
   useEffect(() => {
     if (!isModelTrained && data && data.length > 0) {
       predictor.train(data);
@@ -191,100 +180,83 @@ const PredictionTab = ({ data = [] }) => {
     // eslint-disable-next-line
   }, [data, predictor, isModelTrained, region, availableRegions]);
 
-  // Prediction computation effect
-  useEffect(() => {
-    if (isModelTrained && region) {
-        const rawPredictions = predictor.getSixPredictions(livingSpace, rooms, region);
+  // Build grouped Yes/No chart data while keeping your core prediction logic
+  const chartData = useMemo(() => {
+    if (!isModelTrained || !region) return [];
 
-        const allTrue = rawPredictions.find(p => p.featureType === 'allTrue');
-        const allFalse = rawPredictions.find(p => p.featureType === 'allFalse');
-        
-        const adjustedPredictions = rawPredictions
-          .filter(p => p.featureType !== 'allTrue' && p.featureType !== 'allFalse') // Skip "allTrue"/"allFalse" in chart, or include if wanted
-          .map(p => {
-            // Averaging logic by type
-            if (['balcony', 'garden', 'lift'].includes(p.featureType) && p.hasFeature && allTrue) {
-              // Balcony Only, Garden Only, Lift Only: average with All true
-              return { ...p, rent: Math.round((p.rent + allTrue.rent) / 2) };
-            }
-            if (['balcony', 'garden', 'lift'].includes(p.featureType) && !p.hasFeature && allFalse) {
-              // No Balcony, No Garden, No Lift: average with All false
-              return { ...p, rent: Math.round((p.rent + allFalse.rent) / 2) };
-            }
-            return p;
-          });
-        
-        setPredictions(adjustedPredictions);
-    }
-    // eslint-disable-next-line
-  }, [livingSpace, rooms, region, isModelTrained]);
+    const raw = predictor.getSixPredictions(livingSpace, rooms, region);
+    const allTrue  = raw.find(p => p.featureType === 'allTrue');
+    const allFalse = raw.find(p => p.featureType === 'allFalse');
 
+    // Apply your “averaging with allTrue/allFalse” logic for each feature
+    const adjust = (p, ref) => Math.round((p.rent + ref.rent) / 2);
+
+    const balconyYes = raw.find(p => p.name === 'Balcony');
+    const balconyNo  = raw.find(p => p.name === 'No Balcony');
+
+    const gardenYes  = raw.find(p => p.name === 'Garden');
+    const gardenNo   = raw.find(p => p.name === 'No Garden');
+
+    const liftYes    = raw.find(p => p.name === 'Lift');
+    const liftNo     = raw.find(p => p.name === 'No Lift');
+
+    return [
+      {
+        feature: 'Balcony',
+        Yes: balconyYes && allTrue ? adjust(balconyYes, allTrue) : balconyYes?.rent || 0,
+        No:  balconyNo  && allFalse ? adjust(balconyNo,  allFalse) : balconyNo?.rent  || 0,
+      },
+      {
+        feature: 'Garden',
+        Yes: gardenYes && allTrue ? adjust(gardenYes, allTrue) : gardenYes?.rent || 0,
+        No:  gardenNo  && allFalse ? adjust(gardenNo,  allFalse) : gardenNo?.rent  || 0,
+      },
+      {
+        feature: 'Lift',
+        Yes: liftYes && allTrue ? adjust(liftYes, allTrue) : liftYes?.rent || 0,
+        No:  liftNo  && allFalse ? adjust(liftNo,  allFalse) : liftNo?.rent  || 0,
+      },
+      {
+        feature: 'All Features',
+        Yes: allTrue?.rent  || 0,
+        No:  allFalse?.rent || 0,
+      }
+    ];
+  }, [isModelTrained, region, livingSpace, rooms, predictor]);
+
+  // Chart visual config
   const CHART_CONFIG = {
-    margin: { top: 18, right: 30, left: 12, bottom: 40 },
-    barCategoryGap: '30%',
+    margin: { top: 12, right: 24, left: 26, bottom: 44 },
+    barCategoryGap: '28%',
     gridStyle: { strokeDasharray: '3 3', stroke: '#eee', strokeWidth: 1 },
-    fontSize: { axis: 13, label: 15 },
+    fontSize: { axis: 12, label: 14 },
     barSize: 34,
   };
-  
-  const FEATURE_COLORS = {
-    bar: '#1976D2'
-  };
-  // LollipopChart: pass predictions
-  const LollipopChart = ({ data }) => (
+
+  const FEATURE_COLORS = { yes: '#22C55E', no: '#EF4444' };
+
+  const GroupedChart = ({ data }) => (
     <ResponsiveContainer width="100%" height={320}>
-      <BarChart
-        data={data}
-        margin={CHART_CONFIG.margin}
-        barCategoryGap={CHART_CONFIG.barCategoryGap}
-      >
-        <CartesianGrid 
+      <BarChart data={data} margin={CHART_CONFIG.margin} barCategoryGap={CHART_CONFIG.barCategoryGap}>
+        <CartesianGrid
           strokeDasharray={CHART_CONFIG.gridStyle.strokeDasharray}
           stroke={CHART_CONFIG.gridStyle.stroke}
           strokeWidth={CHART_CONFIG.gridStyle.strokeWidth}
         />
         <XAxis
-          dataKey="name"
-          angle={-15}
-          textAnchor="end"
-          interval={0}
+          dataKey="feature"
           tick={{ fontSize: CHART_CONFIG.fontSize.axis }}
-          axisLine={{ stroke: '#666', strokeWidth: 1 }}
-          tickLine={{ stroke: '#666', strokeWidth: 1 }}
-          label={{ value: 'Feature', position: 'insideBottom', offset: -10, fontSize: CHART_CONFIG.fontSize.label }}
+          label={{ value: 'Feature', position: 'insideBottom', offset: -8, fontSize: CHART_CONFIG.fontSize.label }}
         />
         <YAxis
-          tickFormatter={value => `€${value}`}
-          fontSize={CHART_CONFIG.fontSize.axis}
+          tickFormatter={(v) => `€${v}`}
           tick={{ fontSize: CHART_CONFIG.fontSize.axis }}
-          axisLine={{ stroke: '#666', strokeWidth: 1 }}
-          tickLine={{ stroke: '#666', strokeWidth: 1 }}
-          label={{ value: 'Predicted Rent (€)', angle: -90, position: 'insideLeft', fontSize: CHART_CONFIG.fontSize.label }}
+          label={{value: 'Predicted Rent',angle: -90,position: 'insideLeft',style: { fontSize: CHART_CONFIG.fontSize.label },dy: 40,}}
         />
-        <Tooltip
-          formatter={value => `€${value}`}
-          labelStyle={{ fontWeight: 'bold', fontSize: CHART_CONFIG.fontSize.axis }}
-          contentStyle={{
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
-            border: '1px solid #ccc',
-            borderRadius: '4px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-          }}
-        />
-        {/* One bar per scenario */}
-        <Bar
-          dataKey="rent"
-          fill={FEATURE_COLORS.bar}
-          barSize={CHART_CONFIG.barSize}
-          radius={[2, 2, 0, 0]}
-          isAnimationActive={false}
-        >
-          <LabelList
-            dataKey="rent"
-            position="top"
-            formatter={value => `€${value}`}
-          />
-        </Bar>
+        <Tooltip formatter={(v, n) => [`€${v}`, n]} />
+        <Legend verticalAlign="top"/>
+        <Bar dataKey="Yes" fill={FEATURE_COLORS.yes} barSize={CHART_CONFIG.barSize} radius={[2, 2, 0, 0]} />
+        <Bar dataKey="No"  fill={FEATURE_COLORS.no}  barSize={CHART_CONFIG.barSize} radius={[2, 2, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );
@@ -328,25 +300,17 @@ const PredictionTab = ({ data = [] }) => {
               ))}
             </Select>
           </FormControl>
-          {/*
-          <Divider sx={{ my: 2 }} />
-          <Typography sx={{ mt: 1 }} variant="body2" color="textSecondary">
-            Baseline Rent (No Features)<br />
-            <span style={{ fontWeight: 'bold', fontSize: 20 }}>
-              €{predictions.find(p => !p.hasFeature)?.rent?.toLocaleString() || 0}
-            </span>
-          </Typography>
-          */}
         </Card>
       </Grid>
+
       <Grid item xs={12} md={8}>
         <Card sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Individual Feature Impact Comparison
+            Predicted Rent by Feature
           </Typography>
           <Box sx={{ height: 320 }}>
-            {predictions.length > 0 ? (
-              <LollipopChart data={predictions} />
+            {chartData.length > 0 ? (
+              <GroupedChart data={chartData} />
             ) : (
               <Typography>Configure inputs to see predictions</Typography>
             )}
