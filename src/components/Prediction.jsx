@@ -281,7 +281,7 @@ const PredictionTab = ({ data = [] }) => {
             type="number"
             value={rooms}
             onChange={e => setRooms(Number(e.target.value))}
-            inputProps={{ min: 1, max: 10, step: 0.5 }}
+            inputProps={{ min: 1, max: 10, step: 1 }}
             fullWidth
             margin="normal"
             variant="outlined"
