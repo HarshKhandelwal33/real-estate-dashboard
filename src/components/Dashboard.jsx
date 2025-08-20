@@ -152,11 +152,17 @@ export default function Dashboard() {
   })();
 
   const dCondition = conditions
-    .filter(c => c !== 'All' && c.toLowerCase() !== 'negotiable')
-    .map((c,i) => {
-      const cnt = filtered.filter(r=>r.condition===c).length;
-      return { name:c, value:cnt, fill:COLORS[i%COLORS.length] };
-    }).filter(d=>d.value>0).sort((a,b)=>b.value-a.value);
+  .filter(c => c !== 'All' && c.toLowerCase() !== 'negotiable')
+  .map((c, i) => {
+    const cnt = filtered.filter(r => r.condition === c).length;
+    return { 
+      name: c.replace(/_/g, ' '),   // ⬅️ replace underscores with spaces
+      value: cnt, 
+      fill: COLORS[i % COLORS.length] 
+    };
+  })
+  .filter(d => d.value > 0)
+  .sort((a, b) => b.value - a.value);
 
   const dYearArea = (() => {
     const m = {};
@@ -385,22 +391,35 @@ export default function Dashboard() {
                     <Box sx={{ height: H }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
-                          <Pie
-                            data={dCondition}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius="58%"
-                            outerRadius="82%"
-                            dataKey="value"
-                            stroke="#fff"
-                            strokeWidth={2}
-                            labelLine={false}
-                            label={renderDonutPercent}   // ⬅️ percent in the middle
-                          >
-                            {dCondition.map((e,i)=>(<Cell key={i} fill={COLORS[i%COLORS.length]} />))}
-                          </Pie>
-                          <Tooltip formatter={(v, n)=>[v, capitalize(n)]} />
-                        </PieChart>
+  <Pie
+    data={dCondition}
+    cx="40%"                 // shift left to make room for the legend
+    cy="50%"
+    innerRadius="58%"
+    outerRadius="82%"
+    dataKey="value"
+    stroke="#fff"
+    strokeWidth={2}
+    labelLine={false}
+    label={renderDonutPercent} // percent in the middle
+  >
+    {dCondition.map((e, i) => (
+      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+    ))}
+  </Pie>
+
+  {/* Legend on the right side */}
+  <Legend
+    layout="vertical"
+    align="right"
+    verticalAlign="middle"
+    wrapperStyle={{ fontSize: CHART.axisFs.tick }}
+    formatter={(value) => capitalize(value)}
+  />
+
+  <Tooltip formatter={(v, n) => [v, capitalize(n)]} />
+</PieChart>
+
                       </ResponsiveContainer>
                     </Box>
                   </CardContent>
