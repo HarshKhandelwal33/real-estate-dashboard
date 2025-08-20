@@ -218,7 +218,7 @@ export default function Dashboard() {
     
     {/* Left: Title */}
     <Typography variant={isSm ? 'subtitle1' : 'h6'}>
-      Germany – Rental Analysis
+      Germany Rental Analysis
     </Typography>
 
     {/* Center: KPIs */}
